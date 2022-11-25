@@ -4,6 +4,8 @@
 package handlers
 
 import (
+	"context"
+	"github.com/mikenai/gowork/internal/models"
 	"sync"
 )
 
@@ -17,7 +19,7 @@ var _ UsersService = &UsersServiceMock{}
 //
 //		// make and configure a mocked UsersService
 //		mockedUsersService := &UsersServiceMock{
-//			CreateFunc: func(name string) (User, error) {
+//			CreateFunc: func(ctx context.Context, name string) (models.User, error) {
 //				panic("mock out the Create method")
 //			},
 //		}
@@ -28,12 +30,14 @@ var _ UsersService = &UsersServiceMock{}
 //	}
 type UsersServiceMock struct {
 	// CreateFunc mocks the Create method.
-	CreateFunc func(name string) (User, error)
+	CreateFunc func(ctx context.Context, name string) (models.User, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// Create holds details about calls to the Create method.
 		Create []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 			// Name is the name argument value.
 			Name string
 		}
@@ -42,19 +46,21 @@ type UsersServiceMock struct {
 }
 
 // Create calls CreateFunc.
-func (mock *UsersServiceMock) Create(name string) (User, error) {
+func (mock *UsersServiceMock) Create(ctx context.Context, name string) (models.User, error) {
 	if mock.CreateFunc == nil {
 		panic("UsersServiceMock.CreateFunc: method is nil but UsersService.Create was just called")
 	}
 	callInfo := struct {
+		Ctx  context.Context
 		Name string
 	}{
+		Ctx:  ctx,
 		Name: name,
 	}
 	mock.lockCreate.Lock()
 	mock.calls.Create = append(mock.calls.Create, callInfo)
 	mock.lockCreate.Unlock()
-	return mock.CreateFunc(name)
+	return mock.CreateFunc(ctx, name)
 }
 
 // CreateCalls gets all the calls that were made to Create.
@@ -62,9 +68,11 @@ func (mock *UsersServiceMock) Create(name string) (User, error) {
 //
 //	len(mockedUsersService.CreateCalls())
 func (mock *UsersServiceMock) CreateCalls() []struct {
+	Ctx  context.Context
 	Name string
 } {
 	var calls []struct {
+		Ctx  context.Context
 		Name string
 	}
 	mock.lockCreate.RLock()

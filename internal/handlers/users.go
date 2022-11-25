@@ -1,38 +1,45 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
+
+	"github.com/mikenai/gowork/internal/models"
 )
 
 type CreateUserParams struct {
 	Name string
 }
 
-type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
 //go:generate moq -rm -out users_mock.go . UsersService
 type UsersService interface {
-	Create(name string) (User, error)
+	Create(ctx context.Context, name string) (models.User, error)
 }
 
 type Users struct {
 	user UsersService
 }
 
-func (u Users) Create(w http.ResponseWriter, r *http.Request) {
-	var userParams CreateUserParams
+func NewUsers(us UsersService) Users {
+	return Users{}
+}
 
+func (u Users) Create(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var userParams CreateUserParams
 	if err := json.NewDecoder(r.Body).Decode(&userParams); err != nil {
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 
-	user, err := u.user.Create(userParams.Name)
+	user, err := u.user.Create(ctx, userParams.Name)
 	if err != nil {
+		if errors.Is(err, models.UserCreateParamInvalidNameErr) {
+			http.Error(w, "", http.StatusBadRequest)
+		}
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}

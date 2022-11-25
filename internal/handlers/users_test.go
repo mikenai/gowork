@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/mikenai/gowork/internal/models"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestUsers_Create(t *testing.T) {
@@ -27,11 +30,9 @@ func TestUsers_Create(t *testing.T) {
 			name: "success",
 			fields: fields{
 				user: &UsersServiceMock{
-					CreateFunc: func(name string) (User, error) {
-						if name != "mike" {
-							t.Error("unexprected error")
-						}
-						return User{Name: name, ID: "1"}, nil
+					CreateFunc: func(ctx context.Context, name string) (models.User, error) {
+						assert.Equal(t, "mike", name)
+						return models.User{Name: name, ID: "1"}, nil
 					},
 				},
 			},
@@ -49,12 +50,8 @@ func TestUsers_Create(t *testing.T) {
 				user: tt.fields.user,
 			}
 			u.Create(tt.args.w, tt.args.r)
-			if tt.args.w.Code != tt.wantCode {
-				t.Errorf("unexpected code %d want %d", tt.args.w.Code, tt.wantCode)
-			}
-			if !reflect.DeepEqual(tt.args.w.Body.Bytes(), tt.wantBody) {
-				t.Errorf("unexpected body %s, want %s", tt.args.w.Body.Bytes(), tt.wantBody)
-			}
+			assert.Equal(t, tt.wantCode, tt.args.w.Code)
+			assert.Equal(t, tt.args.w.Body.Bytes(), tt.wantBody, "unxpected body")
 		})
 	}
 }
