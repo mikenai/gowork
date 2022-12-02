@@ -22,6 +22,9 @@ var _ UsersService = &UsersServiceMock{}
 //			CreateFunc: func(ctx context.Context, name string) (models.User, error) {
 //				panic("mock out the Create method")
 //			},
+//			FetchFunc: func(ctx context.Context, id string) (models.User, error) {
+//				panic("mock out the Fetch method")
+//			},
 //		}
 //
 //		// use mockedUsersService in code that requires UsersService
@@ -32,6 +35,9 @@ type UsersServiceMock struct {
 	// CreateFunc mocks the Create method.
 	CreateFunc func(ctx context.Context, name string) (models.User, error)
 
+	// FetchFunc mocks the Fetch method.
+	FetchFunc func(ctx context.Context, id string) (models.User, error)
+
 	// calls tracks calls to the methods.
 	calls struct {
 		// Create holds details about calls to the Create method.
@@ -41,8 +47,16 @@ type UsersServiceMock struct {
 			// Name is the name argument value.
 			Name string
 		}
+		// Fetch holds details about calls to the Fetch method.
+		Fetch []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID string
+		}
 	}
 	lockCreate sync.RWMutex
+	lockFetch  sync.RWMutex
 }
 
 // Create calls CreateFunc.
@@ -78,5 +92,41 @@ func (mock *UsersServiceMock) CreateCalls() []struct {
 	mock.lockCreate.RLock()
 	calls = mock.calls.Create
 	mock.lockCreate.RUnlock()
+	return calls
+}
+
+// Fetch calls FetchFunc.
+func (mock *UsersServiceMock) Fetch(ctx context.Context, id string) (models.User, error) {
+	if mock.FetchFunc == nil {
+		panic("UsersServiceMock.FetchFunc: method is nil but UsersService.Fetch was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  string
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockFetch.Lock()
+	mock.calls.Fetch = append(mock.calls.Fetch, callInfo)
+	mock.lockFetch.Unlock()
+	return mock.FetchFunc(ctx, id)
+}
+
+// FetchCalls gets all the calls that were made to Fetch.
+// Check the length with:
+//
+//	len(mockedUsersService.FetchCalls())
+func (mock *UsersServiceMock) FetchCalls() []struct {
+	Ctx context.Context
+	ID  string
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  string
+	}
+	mock.lockFetch.RLock()
+	calls = mock.calls.Fetch
+	mock.lockFetch.RUnlock()
 	return calls
 }

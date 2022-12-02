@@ -29,6 +29,7 @@ func main() {
 	r.Use(middleware.Recoverer)
 
 	r.Post("/users", uh.Create)
+	r.Get("/users/{id}", uh.Fetch)
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(5 * time.Second)

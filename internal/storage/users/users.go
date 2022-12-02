@@ -32,3 +32,14 @@ func (s Storage) Create(ctx context.Context, name string) (models.User, error) {
 	}
 	return models.User{ID: id, Name: name}, nil
 }
+
+func (s Storage) Fetch(ctx context.Context, id string) (models.User, error) {
+	row := s.db.QueryRowContext(ctx, "SELECT id, name FROM users WHERE id=?", id)
+
+	user := models.User{}
+	if err := row.Scan(&user.ID, &user.Name); err != nil {
+		return models.User{}, err
+	}
+
+	return user, nil
+}

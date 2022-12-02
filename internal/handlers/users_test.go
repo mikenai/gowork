@@ -97,3 +97,64 @@ func TestUsers_Create(t *testing.T) {
 		})
 	}
 }
+
+func TestUsers_Fetch(t *testing.T) {
+	type fields struct {
+		user UsersService
+	}
+	type args struct {
+		w *httptest.ResponseRecorder
+		r *http.Request
+	}
+	tests := []struct {
+		name     string
+		fields   fields
+		args     args
+		wantCode int
+		wantBody []byte
+	}{
+		{
+			name: "success",
+			fields: fields{
+				user: &UsersServiceMock{
+					FetchFunc: func(ctx context.Context, id string) (models.User, error) {
+						// TODO: id should be taken from arg
+						return models.User{ID: "1", Name: "mike"}, nil
+					},
+				},
+			},
+			args: args{
+				w: httptest.NewRecorder(),
+				r: httptest.NewRequest("GET", "/1", strings.NewReader("")),
+			},
+			wantCode: http.StatusOK,
+			wantBody: []byte(`{"id":"1","name":"mike"}` + "\n"),
+		},
+		{
+			name: "not found",
+			fields: fields{
+				user: &UsersServiceMock{
+					FetchFunc: func(ctx context.Context, id string) (models.User, error) {
+						return models.User{}, models.NotFound
+					},
+				},
+			},
+			args: args{
+				w: httptest.NewRecorder(),
+				r: httptest.NewRequest("GET", "/1", strings.NewReader("")),
+			},
+			wantCode: http.StatusNotFound,
+			wantBody: []byte{0xa},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			u := Users{
+				user: tt.fields.user,
+			}
+			u.Fetch(tt.args.w, tt.args.r)
+			assert.Equal(t, tt.wantCode, tt.args.w.Code, "invalid code")
+			assert.Equal(t, tt.wantBody, tt.args.w.Body.Bytes(), "unxpected body")
+		})
+	}
+}
