@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -26,9 +30,34 @@ func main() {
 
 	r.Post("/users", uh.Create)
 
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(5 * time.Second)
+		fmt.Println("over")
+	})
+
 	s := http.Server{
 		Addr:    ":8080",
 		Handler: r,
+
+		ReadTimeout:  1 * time.Second,
+		WriteTimeout: 1 * time.Second,
+
+		IdleTimeout: 2 * time.Second,
 	}
-	fmt.Println(s.ListenAndServe())
+
+	go func() {
+		fmt.Println(s.ListenAndServe())
+	}()
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	defer stop()
+
+	<-ctx.Done()
+	fmt.Println("signal received")
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	fmt.Println("shutting down")
+	s.Shutdown(ctx)
 }
