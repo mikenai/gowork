@@ -1,6 +1,7 @@
 package users
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -28,7 +29,7 @@ func TestService_Create(t *testing.T) {
 			s := Service{
 				repo: tt.fields.repo,
 			}
-			got, err := s.Create(tt.args.name)
+			got, err := s.Create(context.Background(), tt.args.name)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Service.Create() error = %v, wantErr %v", err, tt.wantErr)
 				return
