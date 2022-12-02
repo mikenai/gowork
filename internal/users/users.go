@@ -7,12 +7,13 @@ import (
 	"github.com/mikenai/gowork/internal/models"
 )
 
-type Repositry interface {
+//go:generate moq -rm -out users_repository_mock.go . Repository
+type Repository interface {
 	Create(ctx context.Context, name string) (models.User, error)
 }
 
 type Service struct {
-	repo Repositry
+	repo Repository
 }
 
 func (s Service) Create(ctx context.Context, name string) (models.User, error) {

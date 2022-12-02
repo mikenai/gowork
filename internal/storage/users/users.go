@@ -9,8 +9,19 @@ import (
 	"github.com/mikenai/gowork/internal/models"
 )
 
+const file string = "users.db"
+
 type Storage struct {
 	db *sql.DB
+}
+
+func NewStorage() (*Storage, error) {
+	db, err := sql.Open("sqlite3", file)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Storage{db}, nil
 }
 
 func (s Storage) Create(ctx context.Context, name string) (models.User, error) {

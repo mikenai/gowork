@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -43,6 +44,47 @@ func TestUsers_Create(t *testing.T) {
 			wantCode: http.StatusOK,
 			wantBody: []byte(`{"id":"1","name":"mike"}` + "\n"),
 		},
+		{
+			name: "cant save",
+			fields: fields{
+				user: &UsersServiceMock{
+					CreateFunc: func(ctx context.Context, name string) (models.User, error) {
+						return models.User{}, fmt.Errorf("Can't create user")
+					},
+				},
+			},
+			args: args{
+				w: httptest.NewRecorder(),
+				r: httptest.NewRequest("GET", "/", strings.NewReader(`{"name": "mike"}`)),
+			},
+			wantCode: http.StatusInternalServerError,
+			wantBody: []byte{0xa},
+		},
+		{
+			name: "invalid name",
+			fields: fields{
+				user: &UsersServiceMock{
+					CreateFunc: func(ctx context.Context, name string) (models.User, error) {
+						return models.User{}, models.UserCreateParamInvalidNameErr
+					},
+				},
+			},
+			args: args{
+				w: httptest.NewRecorder(),
+				r: httptest.NewRequest("GET", "/", strings.NewReader(`{"name": ""}`)),
+			},
+			wantCode: http.StatusBadRequest,
+			wantBody: []byte{0xa},
+		},
+		{
+			name: "json decode failed",
+			args: args{
+				w: httptest.NewRecorder(),
+				r: httptest.NewRequest("GET", "/", strings.NewReader(`{]`)),
+			},
+			wantCode: http.StatusInternalServerError,
+			wantBody: []byte{0xa},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -50,8 +92,8 @@ func TestUsers_Create(t *testing.T) {
 				user: tt.fields.user,
 			}
 			u.Create(tt.args.w, tt.args.r)
-			assert.Equal(t, tt.wantCode, tt.args.w.Code)
-			assert.Equal(t, tt.args.w.Body.Bytes(), tt.wantBody, "unxpected body")
+			assert.Equal(t, tt.wantCode, tt.args.w.Code, "invalid code")
+			assert.Equal(t, tt.wantBody, tt.args.w.Body.Bytes(), "unxpected body")
 		})
 	}
 }
