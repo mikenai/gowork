@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"os/signal"
 	"syscall"
@@ -10,7 +12,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/mikenai/gowork/internal/handlers"
+	userstorage "github.com/mikenai/gowork/internal/storage/users"
 	"github.com/mikenai/gowork/internal/users"
 )
 
@@ -18,8 +22,21 @@ func main() {
 	fmt.Println("starting")
 	defer fmt.Println("shutdown")
 
-	us := users.Service{}
+	db, err := sql.Open("sqlite3", "./tmp/db.sqlite3")
+	if err != nil {
+		log.Fatal("failed to connect to database", err)
+	}
 
+	db.SetMaxIdleConns(1)
+	db.SetMaxOpenConns(10)
+
+	db.SetConnMaxLifetime(time.Second * 5)
+	db.SetConnMaxIdleTime(time.Second * 1)
+
+	// prometheus.MustRegister(dbcollector.NewSQLDatabaseCollector("general", "main", "sqlite", db))
+
+	ur := userstorage.New(db)
+	us := users.New(ur)
 	uh := handlers.NewUsers(us)
 
 	r := chi.NewRouter()
@@ -28,12 +45,7 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	r.Post("/users", uh.Create)
-
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(5 * time.Second)
-		fmt.Println("over")
-	})
+	r.Mount("/users", uh.Routes())
 
 	s := http.Server{
 		Addr:    ":8080",

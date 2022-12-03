@@ -15,6 +15,10 @@ type Service struct {
 	repo Repositry
 }
 
+func New(r Repositry) Service {
+	return Service{repo: r}
+}
+
 func (s Service) Create(ctx context.Context, name string) (models.User, error) {
 	if name == "" {
 		return models.User{}, fmt.Errorf("invalid name argument: %w", models.UserCreateParamInvalidNameErr)

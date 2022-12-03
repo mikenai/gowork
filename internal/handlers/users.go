@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/mikenai/gowork/internal/models"
 )
 
@@ -24,6 +25,14 @@ type Users struct {
 
 func NewUsers(us UsersService) Users {
 	return Users{}
+}
+
+func (u Users) Routes() http.Handler {
+	r := chi.NewRouter()
+
+	r.Post("/", u.Create)
+
+	return r
 }
 
 func (u Users) Create(w http.ResponseWriter, r *http.Request) {
