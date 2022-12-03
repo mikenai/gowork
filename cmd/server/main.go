@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
 	"os/signal"
 	"syscall"
@@ -17,25 +16,33 @@ import (
 	userstorage "github.com/mikenai/gowork/internal/storage/users"
 	"github.com/mikenai/gowork/internal/users"
 	"github.com/mikenai/gowork/pkg/dbcollector"
+	"github.com/mikenai/gowork/pkg/logger"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
-	fmt.Println("starting")
-	defer fmt.Println("shutdown")
+	defaultLog := logger.DefaultLogger()
 
 	cfg, help, err := config.New()
 	if err != nil {
 		if help != "" {
-			log.Fatal(help)
+			defaultLog.Fatal().Msg(help.String())
 		}
-		log.Fatal(err)
+		defaultLog.Fatal().Err(err).Msg("failed to parse config")
 	}
+
+	log, err := logger.New(cfg.Log)
+	if err != nil {
+		defaultLog.Fatal().Err(err).Msg("failed to init logger")
+	}
+
+	log.Info().Msg("starting")
+	defer log.Info().Msg("shudown")
 
 	db, err := sql.Open("sqlite3", cfg.DB.DSN)
 	if err != nil {
-		log.Fatal("failed to connect to database", err)
+		log.Fatal().Err(err).Msg("failed to connect to database")
 	}
 	defer db.Close() // always close resources
 
@@ -54,6 +61,7 @@ func main() {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(logger.InjectLoggerMiddleware(log))
 
 	prometheus.MustRegister(dbcollector.NewSQLDatabaseCollector("general", "main", "sqlite", db))
 	r.Mount("/metrics", promhttp.Handler())
@@ -78,11 +86,11 @@ func main() {
 	defer stop()
 
 	<-ctx.Done()
-	fmt.Println("signal received")
+	log.Info().Msg("signal received")
 
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.GracefullTimeout)
 	defer cancel()
 
-	fmt.Println("shutting down")
+	log.Info().Msg("shutting down")
 	s.Shutdown(ctx)
 }

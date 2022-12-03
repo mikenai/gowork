@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mikenai/gowork/internal/models"
+	"github.com/mikenai/gowork/pkg/logger"
 )
 
 type CreateUserParams struct {
@@ -37,9 +38,11 @@ func (u Users) Routes() http.Handler {
 
 func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	log := logger.FromContext(ctx)
 
 	var userParams CreateUserParams
 	if err := json.NewDecoder(r.Body).Decode(&userParams); err != nil {
+		log.Error().Err(err).Msg("failed to parse params")
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -49,11 +52,13 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, models.UserCreateParamInvalidNameErr) {
 			http.Error(w, "", http.StatusBadRequest)
 		}
+		log.Error().Err(err).Msg("failed to create user")
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 
 	if err := json.NewEncoder(w).Encode(user); err != nil {
+		log.Error().Err(err).Msg("failed to encode response")
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
