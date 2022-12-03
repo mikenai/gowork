@@ -3,7 +3,6 @@ package logger
 import (
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 
 	"github.com/rs/zerolog"
