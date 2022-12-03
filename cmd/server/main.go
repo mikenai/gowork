@@ -16,6 +16,9 @@ import (
 	"github.com/mikenai/gowork/internal/handlers"
 	userstorage "github.com/mikenai/gowork/internal/storage/users"
 	"github.com/mikenai/gowork/internal/users"
+	"github.com/mikenai/gowork/pkg/dbcollector"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -33,8 +36,6 @@ func main() {
 	db.SetConnMaxLifetime(time.Second * 5)
 	db.SetConnMaxIdleTime(time.Second * 1)
 
-	// prometheus.MustRegister(dbcollector.NewSQLDatabaseCollector("general", "main", "sqlite", db))
-
 	ur := userstorage.New(db)
 	us := users.New(ur)
 	uh := handlers.NewUsers(us)
@@ -44,6 +45,9 @@ func main() {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+
+	prometheus.MustRegister(dbcollector.NewSQLDatabaseCollector("general", "main", "sqlite", db))
+	r.Mount("/metrics", promhttp.Handler())
 
 	r.Mount("/users", uh.Routes())
 
