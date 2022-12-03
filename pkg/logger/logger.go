@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,38 +32,4 @@ func New(cfg Config) (zerolog.Logger, error) {
 
 func DefaultLogger() zerolog.Logger {
 	return zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.ErrorLevel)
-}
-
-type key string
-
-const (
-	loggerKey key = "logger"
-)
-
-func CtxWithLog(ctx context.Context, log zerolog.Logger) context.Context {
-	return context.WithValue(ctx, loggerKey, log)
-}
-
-func FromContext(ctx context.Context) zerolog.Logger {
-	if log := ctx.Value(loggerKey); log != nil {
-		return log.(zerolog.Logger)
-	}
-	return zerolog.Nop()
-}
-
-func LoggerMiddleware(log zerolog.Logger) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-
-			l := log.With().
-				Str("url", r.URL.Path).
-				Str("remote_addr", r.RemoteAddr).
-				Logger()
-
-			r = r.WithContext(CtxWithLog(ctx, l))
-
-			next.ServeHTTP(w, r)
-		})
-	}
 }
