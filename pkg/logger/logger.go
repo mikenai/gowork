@@ -52,7 +52,7 @@ func FromContext(ctx context.Context) zerolog.Logger {
 	return zerolog.Nop()
 }
 
-func InjectLoggerMiddleware(log zerolog.Logger) func(http.Handler) http.Handler {
+func LoggerMiddleware(log zerolog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()

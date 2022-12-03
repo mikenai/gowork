@@ -61,7 +61,7 @@ func main() {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(logger.InjectLoggerMiddleware(log))
+	r.Use(logger.LoggerMiddleware(log))
 
 	prometheus.MustRegister(dbcollector.NewSQLDatabaseCollector("general", "main", "sqlite", db))
 	r.Mount("/metrics", promhttp.Handler())
