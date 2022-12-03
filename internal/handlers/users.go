@@ -24,7 +24,7 @@ type Users struct {
 }
 
 func NewUsers(us UsersService) Users {
-	return Users{}
+	return Users{user: us}
 }
 
 func (u Users) Routes() http.Handler {
