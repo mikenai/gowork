@@ -6,13 +6,19 @@ import (
 	"time"
 
 	"github.com/ardanlabs/conf/v3"
+	"github.com/mikenai/gowork/pkg/logger"
 )
 
 type Help string
 
+func (h Help) String() string {
+	return string(h)
+}
+
 type Config struct {
 	GracefullTimeout time.Duration `conf:"default:30s"`
 
+	Log  logger.Config
 	HTTP HTTP
 	DB   SQLite
 }
