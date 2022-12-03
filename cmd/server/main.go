@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/mikenai/gowork/cmd/server/config"
 	"github.com/mikenai/gowork/internal/handlers"
 	userstorage "github.com/mikenai/gowork/internal/storage/users"
 	"github.com/mikenai/gowork/internal/users"
@@ -25,16 +25,25 @@ func main() {
 	fmt.Println("starting")
 	defer fmt.Println("shutdown")
 
-	db, err := sql.Open("sqlite3", "./tmp/db.sqlite3")
+	cfg, help, err := config.New()
+	if err != nil {
+		if help != "" {
+			log.Fatal(help)
+		}
+		log.Fatal(err)
+	}
+
+	db, err := sql.Open("sqlite3", cfg.DB.DSN)
 	if err != nil {
 		log.Fatal("failed to connect to database", err)
 	}
+	defer db.Close() // always close resources
 
-	db.SetMaxIdleConns(1)
-	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(cfg.DB.MaxIdleConns)
+	db.SetMaxOpenConns(cfg.DB.MaxOpenConns)
 
-	db.SetConnMaxLifetime(time.Second * 5)
-	db.SetConnMaxIdleTime(time.Second * 1)
+	db.SetConnMaxLifetime(cfg.DB.ConnMaxLifetime)
+	db.SetConnMaxIdleTime(cfg.DB.ConnMaxIdleTime)
 
 	ur := userstorage.New(db)
 	us := users.New(ur)
@@ -52,13 +61,13 @@ func main() {
 	r.Mount("/users", uh.Routes())
 
 	s := http.Server{
-		Addr:    ":8080",
+		Addr:    cfg.HTTP.Addr,
 		Handler: r,
 
-		ReadTimeout:  1 * time.Second,
-		WriteTimeout: 1 * time.Second,
+		ReadTimeout:  cfg.HTTP.ReadTimeout,
+		WriteTimeout: cfg.HTTP.WriteTimeout,
 
-		IdleTimeout: 2 * time.Second,
+		IdleTimeout: cfg.HTTP.IdleTimeout,
 	}
 
 	go func() {
@@ -71,7 +80,7 @@ func main() {
 	<-ctx.Done()
 	fmt.Println("signal received")
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.GracefullTimeout)
 	defer cancel()
 
 	fmt.Println("shutting down")
