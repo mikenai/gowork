@@ -3,6 +3,7 @@ module github.com/mikenai/gowork
 go 1.19
 
 require (
+	github.com/ardanlabs/conf/v3 v3.1.3
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/google/uuid v1.3.0
 	github.com/mattn/go-sqlite3 v1.14.16
