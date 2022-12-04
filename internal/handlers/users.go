@@ -67,20 +67,21 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 
 func (u Users) GetOne(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	log := logger.FromContext(ctx)
 	id := chi.URLParam(r, "id")
 
 	usr, err := u.user.GetOne(ctx, id)
 	if err != nil {
 		if errors.Is(err, models.NotFoundErr) {
-			http.Error(w, "not found", http.StatusNotFound)
+			response.NotFound(w)
 			return
 		}
-		http.Error(w, "", http.StatusInternalServerError)
+		log.Error().Err(err).Msg("failed to get user")
+		response.InternalError(w)
 		return
 	}
 
-	if err := json.NewEncoder(w).Encode(usr); err != nil {
-		http.Error(w, "", http.StatusInternalServerError)
-		return
+	if err := response.JSON(w, usr); err != nil {
+		log.Error().Err(err).Msg("failed to encode response")
 	}
 }
