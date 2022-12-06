@@ -22,6 +22,9 @@ var _ UsersService = &UsersServiceMock{}
 //			CreateFunc: func(ctx context.Context, name string) (models.User, error) {
 //				panic("mock out the Create method")
 //			},
+//			GetOneFunc: func(ctx context.Context, id string) (models.User, error) {
+//				panic("mock out the GetOne method")
+//			},
 //		}
 //
 //		// use mockedUsersService in code that requires UsersService
@@ -32,6 +35,9 @@ type UsersServiceMock struct {
 	// CreateFunc mocks the Create method.
 	CreateFunc func(ctx context.Context, name string) (models.User, error)
 
+	// GetOneFunc mocks the GetOne method.
+	GetOneFunc func(ctx context.Context, id string) (models.User, error)
+
 	// calls tracks calls to the methods.
 	calls struct {
 		// Create holds details about calls to the Create method.
@@ -41,8 +47,16 @@ type UsersServiceMock struct {
 			// Name is the name argument value.
 			Name string
 		}
+		// GetOne holds details about calls to the GetOne method.
+		GetOne []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID string
+		}
 	}
 	lockCreate sync.RWMutex
+	lockGetOne sync.RWMutex
 }
 
 // Create calls CreateFunc.
@@ -78,5 +92,41 @@ func (mock *UsersServiceMock) CreateCalls() []struct {
 	mock.lockCreate.RLock()
 	calls = mock.calls.Create
 	mock.lockCreate.RUnlock()
+	return calls
+}
+
+// GetOne calls GetOneFunc.
+func (mock *UsersServiceMock) GetOne(ctx context.Context, id string) (models.User, error) {
+	if mock.GetOneFunc == nil {
+		panic("UsersServiceMock.GetOneFunc: method is nil but UsersService.GetOne was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  string
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockGetOne.Lock()
+	mock.calls.GetOne = append(mock.calls.GetOne, callInfo)
+	mock.lockGetOne.Unlock()
+	return mock.GetOneFunc(ctx, id)
+}
+
+// GetOneCalls gets all the calls that were made to GetOne.
+// Check the length with:
+//
+//	len(mockedUsersService.GetOneCalls())
+func (mock *UsersServiceMock) GetOneCalls() []struct {
+	Ctx context.Context
+	ID  string
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  string
+	}
+	mock.lockGetOne.RLock()
+	calls = mock.calls.GetOne
+	mock.lockGetOne.RUnlock()
 	return calls
 }
