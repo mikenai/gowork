@@ -4,36 +4,53 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/mikenai/gowork/cmd/server/config"
 	"github.com/mikenai/gowork/internal/handlers"
 	userstorage "github.com/mikenai/gowork/internal/storage/users"
 	"github.com/mikenai/gowork/internal/users"
+	"github.com/mikenai/gowork/pkg/dbcollector"
+	"github.com/mikenai/gowork/pkg/logger"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
-	fmt.Println("starting")
-	defer fmt.Println("shutdown")
+	defaultLog := logger.DefaultLogger()
 
-	db, err := sql.Open("sqlite3", "./tmp/db.sqlite3")
+	cfg, help, err := config.New()
 	if err != nil {
-		log.Fatal("failed to connect to database", err)
+		if help != "" {
+			defaultLog.Fatal().Msg(help.String())
+		}
+		defaultLog.Fatal().Err(err).Msg("failed to parse config")
 	}
 
-	db.SetMaxIdleConns(1)
-	db.SetMaxOpenConns(10)
+	log, err := logger.New(cfg.Log)
+	if err != nil {
+		defaultLog.Fatal().Err(err).Msg("failed to init logger")
+	}
 
-	db.SetConnMaxLifetime(time.Second * 5)
-	db.SetConnMaxIdleTime(time.Second * 1)
+	log.Info().Msg("starting")
+	defer log.Info().Msg("shudown")
 
-	// prometheus.MustRegister(dbcollector.NewSQLDatabaseCollector("general", "main", "sqlite", db))
+	db, err := sql.Open("sqlite3", cfg.DB.DSN)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to connect to database")
+	}
+	defer db.Close() // always close resources
+
+	db.SetMaxIdleConns(cfg.DB.MaxIdleConns)
+	db.SetMaxOpenConns(cfg.DB.MaxOpenConns)
+
+	db.SetConnMaxLifetime(cfg.DB.ConnMaxLifetime)
+	db.SetConnMaxIdleTime(cfg.DB.ConnMaxIdleTime)
 
 	ur := userstorage.New(db)
 	us := users.New(ur)
@@ -44,17 +61,21 @@ func main() {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(logger.LoggerMiddleware(log))
+
+	prometheus.MustRegister(dbcollector.NewSQLDatabaseCollector("general", "main", "sqlite", db))
+	r.Mount("/metrics", promhttp.Handler())
 
 	r.Mount("/users", uh.Routes())
 
 	s := http.Server{
-		Addr:    ":8080",
+		Addr:    cfg.HTTP.Addr,
 		Handler: r,
 
-		ReadTimeout:  1 * time.Second,
-		WriteTimeout: 1 * time.Second,
+		ReadTimeout:  cfg.HTTP.ReadTimeout,
+		WriteTimeout: cfg.HTTP.WriteTimeout,
 
-		IdleTimeout: 2 * time.Second,
+		IdleTimeout: cfg.HTTP.IdleTimeout,
 	}
 
 	go func() {
@@ -65,11 +86,11 @@ func main() {
 	defer stop()
 
 	<-ctx.Done()
-	fmt.Println("signal received")
+	log.Info().Msg("signal received")
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.GracefullTimeout)
 	defer cancel()
 
-	fmt.Println("shutting down")
+	log.Info().Msg("shutting down")
 	s.Shutdown(ctx)
 }
