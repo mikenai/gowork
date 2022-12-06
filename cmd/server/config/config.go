@@ -27,7 +27,7 @@ type SQLite struct {
 }
 
 type HTTP struct {
-	Addr         string        `conf:"defautl::8080"`
+	Addr         string        `conf:"default::8080"`
 	ReadTimeout  time.Duration `conf:"default:1s"`
 	WriteTimeout time.Duration `conf:"default:1s"`
 	IdleTimeout  time.Duration `conf:"default:5s"`
