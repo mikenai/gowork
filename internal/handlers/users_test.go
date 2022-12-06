@@ -38,7 +38,7 @@ func TestUsers_Create(t *testing.T) {
 			},
 			args: args{
 				w: httptest.NewRecorder(),
-				r: httptest.NewRequest("GET", "/", strings.NewReader(`{"name": "mike"}`)),
+				r: httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"name": "mike"}`)),
 			},
 			wantCode: http.StatusOK,
 			wantBody: []byte(`{"id":"1","name":"mike"}` + "\n"),
@@ -46,10 +46,9 @@ func TestUsers_Create(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := Users{
-				user: tt.fields.user,
-			}
-			u.Create(tt.args.w, tt.args.r)
+			u := NewUsers(tt.fields.user)
+			u.Routes().ServeHTTP(tt.args.w, tt.args.r)
+
 			assert.Equal(t, tt.wantCode, tt.args.w.Code)
 			assert.Equal(t, tt.args.w.Body.Bytes(), tt.wantBody, "unxpected body")
 		})
