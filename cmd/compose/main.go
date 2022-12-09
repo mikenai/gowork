@@ -53,17 +53,23 @@ func main() {
 		Timeout: time.Second * 2,
 	}
 
-	stub := stub.Client{
-		BaseURL: ":9090",
+	stub := &stub.Client{
+		BaseURL: "http://localhost:9090",
 		Http:    cl,
 	}
 
-	users := usersapi.Client{
-		BaseURL: ":8080",
+	users := &usersapi.Client{
+		BaseURL: "http://localhost:8080",
 		Http:    cl,
 	}
 
-	h := handlers.Handler{}
+	h := handlers.Handler{
+		PostsAPI:    stub,
+		ProfilesAPI: stub,
+		UsersAPI:    users,
+
+		Log: log,
+	}
 
 	r.Get("/{user_id}", h.UserPage)
 
