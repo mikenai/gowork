@@ -25,20 +25,20 @@ type Profile struct {
 }
 
 type Client struct {
-	baseURL string
-	http    http.Client
+	BaseURL string
+	Http    http.Client
 }
 
 func (cl *Client) GetPosts(ctx context.Context, id string) ([]Post, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		path.Join(cl.baseURL, fmt.Sprintf("/%s/posts", id)), nil)
+		path.Join(cl.BaseURL, fmt.Sprintf("/%s/posts", id)), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header["X-Request-ID"] = []string{middleware.GetReqID(ctx)}
 
-	res, err := cl.http.Do(req)
+	res, err := cl.Http.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to perform request: %w", err)
 	}
@@ -58,14 +58,14 @@ func (cl *Client) GetPosts(ctx context.Context, id string) ([]Post, error) {
 
 func (cl *Client) GetProfile(ctx context.Context, id string) (Profile, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		path.Join(cl.baseURL, fmt.Sprintf("/profiles/%s", id)), nil)
+		path.Join(cl.BaseURL, fmt.Sprintf("/profiles/%s", id)), nil)
 	if err != nil {
 		return Profile{}, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header["X-Request-ID"] = []string{middleware.GetReqID(ctx)}
 
-	res, err := cl.http.Do(req)
+	res, err := cl.Http.Do(req)
 	if err != nil {
 		return Profile{}, fmt.Errorf("failed to perform request: %w", err)
 	}
