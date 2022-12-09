@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"sync"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mikenai/gowork/cmd/compose/pkg/stub"
 	"github.com/mikenai/gowork/cmd/compose/pkg/usersapi"
 	"github.com/rs/zerolog"
+	"golang.org/x/sync/errgroup"
 )
 
 type Posts interface {
@@ -44,56 +44,36 @@ func (h Handler) UserPage(w http.ResponseWriter, r *http.Request) {
 
 	res := UserPageResponse{}
 
-	batchCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	eg, batchCtx := errgroup.WithContext(ctx)
 
-	var batchErr error
-	wg := sync.WaitGroup{}
-	once := sync.Once{}
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	eg.Go(func() error {
 		posts, err := h.PostsAPI.GetPosts(batchCtx, id)
 		if err != nil {
-			once.Do(func() {
-				cancel()
-				batchErr = err
-			})
-			return
+			return err
 		}
 		res.Posts = posts
-	}()
+		return nil
+	})
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	eg.Go(func() error {
 		profile, err := h.ProfilesAPI.GetProfile(batchCtx, id)
 		if err != nil {
-			once.Do(func() {
-				cancel()
-				batchErr = err
-			})
-			return
+			return err
 		}
 		res.Profiles = profile
-	}()
+		return nil
+	})
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	eg.Go(func() error {
 		user, err := h.UsersAPI.GetUser(batchCtx, id)
 		if err != nil {
-			once.Do(func() {
-				cancel()
-				batchErr = err
-			})
-			return
+			return err
 		}
 		res.User = user
-	}()
+		return nil
+	})
 
-	wg.Wait()
+	batchErr := eg.Wait()
 	if batchErr != nil {
 		http.Error(w, "", http.StatusInternalServerError)
 		return
