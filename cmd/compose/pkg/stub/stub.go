@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"path"
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
@@ -31,7 +30,7 @@ type Client struct {
 
 func (cl *Client) GetPosts(ctx context.Context, id string) ([]Post, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		path.Join(cl.BaseURL, fmt.Sprintf("/%s/posts", id)), nil)
+		cl.BaseURL+fmt.Sprintf("/%s/posts", id), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -57,8 +56,7 @@ func (cl *Client) GetPosts(ctx context.Context, id string) ([]Post, error) {
 }
 
 func (cl *Client) GetProfile(ctx context.Context, id string) (Profile, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		path.Join(cl.BaseURL, fmt.Sprintf("/profiles/%s", id)), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, cl.BaseURL+fmt.Sprintf("/profiles/%s", id), nil)
 	if err != nil {
 		return Profile{}, fmt.Errorf("failed to create request: %w", err)
 	}
