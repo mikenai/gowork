@@ -38,7 +38,7 @@ func main() {
 	r.Use(middleware.Recoverer)
 
 	r.Get("/profiles/{user_id}", stub.ProfileHandler)
-	r.Get("/posts/{user_id}", stub.PostsHandler)
+	r.Get("/{user_id}/posts", stub.PostsHandler)
 
 	log.Info().Str("http_addr", cfg.HTTPAddr).Msg("server starting")
 	http.ListenAndServe(cfg.HTTPAddr, r)
