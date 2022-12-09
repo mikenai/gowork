@@ -12,6 +12,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/mikenai/gowork/cmd/compose/config"
 	"github.com/mikenai/gowork/cmd/compose/handlers"
+	"github.com/mikenai/gowork/cmd/compose/pkg/stub"
+	"github.com/mikenai/gowork/cmd/compose/pkg/usersapi"
 	"github.com/mikenai/gowork/pkg/logger"
 )
 
@@ -49,6 +51,16 @@ func main() {
 			IdleConnTimeout:     time.Second * 1,
 		},
 		Timeout: time.Second * 2,
+	}
+
+	stub := stub.Client{
+		BaseURL: ":9090",
+		Http:    cl,
+	}
+
+	users := usersapi.Client{
+		BaseURL: ":8080",
+		Http:    cl,
 	}
 
 	h := handlers.Handler{}
