@@ -65,7 +65,7 @@ func main() {
 
 	h := handlers.Handler{}
 
-	r.Get("/profile", h.UserPage)
+	r.Get("/{user_id}", h.UserPage)
 
 	s := http.Server{
 		Addr:    cfg.HTTP.Addr,
