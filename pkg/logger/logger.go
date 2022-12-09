@@ -18,7 +18,7 @@ func New(cfg Config) (zerolog.Logger, error) {
 	if cfg.Human {
 		output = zerolog.ConsoleWriter{Out: os.Stderr}
 	}
-	log := zerolog.New(output)
+	log := zerolog.New(output).With().Timestamp().Logger()
 
 	lvl, err := zerolog.ParseLevel(cfg.Level)
 	if err != nil {
@@ -30,5 +30,5 @@ func New(cfg Config) (zerolog.Logger, error) {
 }
 
 func DefaultLogger() zerolog.Logger {
-	return zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.ErrorLevel)
+	return zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.ErrorLevel).With().Timestamp().Logger()
 }
