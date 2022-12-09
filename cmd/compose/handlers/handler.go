@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sync"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mikenai/gowork/cmd/compose/pkg/stub"
@@ -41,31 +42,61 @@ func (h Handler) UserPage(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "user_id")
 	ctx := r.Context()
 
-	posts, err := h.PostsAPI.GetPosts(ctx, id)
-	if err != nil {
-		h.Log.Error().Err(err).Msg("get posts error")
-		http.Error(w, "get posts", http.StatusInternalServerError)
-		return
-	}
+	res := UserPageResponse{}
 
-	profile, err := h.ProfilesAPI.GetProfile(ctx, id)
-	if err != nil {
-		h.Log.Error().Err(err).Msg("get profile error")
-		http.Error(w, "get profile", http.StatusInternalServerError)
-		return
-	}
+	batchCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-	user, err := h.UsersAPI.GetUser(ctx, id)
-	if err != nil {
-		h.Log.Error().Err(err).Msg("get user error")
-		http.Error(w, "get user", http.StatusInternalServerError)
-		return
-	}
+	var batchErr error
+	wg := sync.WaitGroup{}
+	once := sync.Once{}
 
-	res := UserPageResponse{
-		Posts:    posts,
-		User:     user,
-		Profiles: profile,
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		posts, err := h.PostsAPI.GetPosts(batchCtx, id)
+		if err != nil {
+			once.Do(func() {
+				cancel()
+				batchErr = err
+			})
+			return
+		}
+		res.Posts = posts
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		profile, err := h.ProfilesAPI.GetProfile(batchCtx, id)
+		if err != nil {
+			once.Do(func() {
+				cancel()
+				batchErr = err
+			})
+			return
+		}
+		res.Profiles = profile
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		user, err := h.UsersAPI.GetUser(batchCtx, id)
+		if err != nil {
+			once.Do(func() {
+				cancel()
+				batchErr = err
+			})
+			return
+		}
+		res.User = user
+	}()
+
+	wg.Wait()
+	if batchErr != nil {
+		http.Error(w, "", http.StatusInternalServerError)
+		return
 	}
 
 	json.NewEncoder(w).Encode(res)
