@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"time"
 
 	"net/http"
 	"os/signal"
@@ -39,6 +40,16 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(logger.LoggerMiddleware(log))
+
+	cl := http.Client{
+		Transport: &http.Transport{
+			MaxConnsPerHost:     10,
+			MaxIdleConns:        5,
+			MaxIdleConnsPerHost: 5,
+			IdleConnTimeout:     time.Second * 1,
+		},
+		Timeout: time.Second * 2,
+	}
 
 	h := handlers.Handler{}
 
