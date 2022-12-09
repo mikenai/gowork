@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/mikenai/gowork/cmd/compose/pkg/stub"
 	"github.com/mikenai/gowork/cmd/compose/pkg/usersapi"
+	"github.com/rs/zerolog"
 )
 
 type Posts interface {
@@ -26,6 +27,8 @@ type Handler struct {
 	PostsAPI    Posts
 	ProfilesAPI Profiles
 	UsersAPI    Users
+
+	Log zerolog.Logger
 }
 
 type UserPageResponse struct {
@@ -40,14 +43,23 @@ func (h Handler) UserPage(w http.ResponseWriter, r *http.Request) {
 
 	posts, err := h.PostsAPI.GetPosts(ctx, id)
 	if err != nil {
+		h.Log.Error().Err(err).Msg("get posts error")
+		http.Error(w, "get posts", http.StatusInternalServerError)
+		return
 	}
 
 	profile, err := h.ProfilesAPI.GetProfile(ctx, id)
 	if err != nil {
+		h.Log.Error().Err(err).Msg("get profile error")
+		http.Error(w, "get profile", http.StatusInternalServerError)
+		return
 	}
 
 	user, err := h.UsersAPI.GetUser(ctx, id)
 	if err != nil {
+		h.Log.Error().Err(err).Msg("get user error")
+		http.Error(w, "get user", http.StatusInternalServerError)
+		return
 	}
 
 	res := UserPageResponse{

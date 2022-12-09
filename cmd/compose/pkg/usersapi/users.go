@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"path"
 
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -23,7 +22,7 @@ type Client struct {
 
 func (cl *Client) GetUser(ctx context.Context, id string) (User, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		path.Join(cl.BaseURL, fmt.Sprintf("/users/%s", id)), nil)
+		cl.BaseURL+fmt.Sprintf("/users/%s", id), nil)
 	if err != nil {
 		return User{}, fmt.Errorf("failed to create request: %w", err)
 	}
