@@ -93,5 +93,7 @@ func main() {
 	defer cancel()
 
 	log.Info().Msg("shutting down")
-	s.Shutdown(ctx)
+	if err := s.Shutdown(ctx); err != nil {
+		log.Error().Err(err).Msg("failed to shutdown http server")
+	}
 }
