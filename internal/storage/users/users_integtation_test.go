@@ -21,12 +21,8 @@ func TestMain(m *testing.M) {
 func TestIntegrationStorage_Create(t *testing.T) {
 	integratiotesting.ShouldSkip(t)
 
-	cfg, _, err := config.New()
-	require.NoError(t, err)
-
-	db, err := sql.Open("sqlite3", cfg.DB.DSN)
-	require.NoError(t, err)
-	defer db.Close()
+	db, dbClose := DbHelper(t)
+	defer dbClose()
 
 	SetUp(t, db, nil)
 	t.Cleanup(func() {
@@ -56,4 +52,16 @@ func SetUp(t *testing.T, db *sql.DB, data any) {
 
 	// place set up code
 	// sql
+}
+
+func DbHelper(t *testing.T) (*sql.DB, func() error) {
+	t.Helper()
+
+	cfg, _, err := config.New()
+	require.NoError(t, err)
+
+	db, err := sql.Open("sqlite3", cfg.DB.DSN)
+	require.NoError(t, err)
+
+	return db, db.Close
 }
