@@ -6,20 +6,35 @@ import (
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/mikenai/gowork/cmd/server/config"
 	"github.com/mikenai/gowork/internal/models"
 	integratiotesting "github.com/mikenai/gowork/pkg/integration_testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+func TestMain(m *testing.M) {
+
+	m.Run()
+}
+
 func TestIntegrationStorage_Create(t *testing.T) {
 	integratiotesting.ShouldSkip(t)
 
+	cfg, _, err := config.New()
+	require.NoError(t, err)
+
+	db, err := sql.Open("sqlite3", cfg.DB.DSN)
+	require.NoError(t, err)
+	defer db.Close()
+
+	SetUp(t, db, nil)
+	t.Cleanup(func() {
+		// clean after test
+	})
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	db, err := sql.Open("sqlite3", "/Users/mikenai/dev/code/gowork/tmp/db.sqlite3")
-	require.NoError(t, err)
 
 	t.Run("succes", func(t *testing.T) {
 		s := Storage{db: db}
@@ -34,4 +49,11 @@ func TestIntegrationStorage_Create(t *testing.T) {
 
 		assert.Equal(t, usr, dbUser)
 	})
+}
+
+func SetUp(t *testing.T, db *sql.DB, data any) {
+	t.Helper()
+
+	// place set up code
+	// sql
 }
