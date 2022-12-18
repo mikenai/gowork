@@ -2,14 +2,11 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/mikenai/gowork/internal/models"
-	"github.com/mikenai/gowork/pkg/logger"
-	"github.com/mikenai/gowork/pkg/response"
+	"github.com/mikenai/gowork/internal/shared/protobuf"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type CreateUserParams struct {
@@ -18,11 +15,11 @@ type CreateUserParams struct {
 
 //go:generate moq -rm -out users_mock.go . UsersService
 type UsersService interface {
-	Create(ctx context.Context, name string) (models.User, error)
 	GetOne(ctx context.Context, id string) (models.User, error)
 }
 
 type Users struct {
+	protobuf.UnimplementedUsersServer
 	user UsersService
 }
 
@@ -30,58 +27,11 @@ func NewUsers(us UsersService) Users {
 	return Users{user: us}
 }
 
-func (u Users) Routes() http.Handler {
-	r := chi.NewRouter()
-
-	r.Post("/", u.Create)
-	r.Get("/{id}", u.GetOne)
-
-	return r
-}
-
-func (u Users) Create(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	log := logger.FromContext(ctx)
-
-	var userParams CreateUserParams
-	if err := json.NewDecoder(r.Body).Decode(&userParams); err != nil {
-		log.Error().Err(err).Msg("failed to parse params")
-		response.InternalError(w)
-		return
-	}
-
-	user, err := u.user.Create(ctx, userParams.Name)
+func (u *Users) GetUser(ctx context.Context, req *protobuf.GetRequest) (*protobuf.User, error) {
+	user, err := u.user.GetOne(ctx, string(req.Id))
 	if err != nil {
-		if errors.Is(err, models.UserCreateParamInvalidNameErr) {
-			response.BadRequest(w)
-		}
-		log.Error().Err(err).Msg("failed to create user")
-		response.InternalError(w)
-		return
+		return nil, status.Error(codes.NotFound, "user was not found")
 	}
 
-	if err := response.JSON(w, user); err != nil {
-		log.Error().Err(err).Msg("failed to encode response")
-	}
-}
-
-func (u Users) GetOne(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	log := logger.FromContext(ctx)
-	id := chi.URLParam(r, "id")
-
-	usr, err := u.user.GetOne(ctx, id)
-	if err != nil {
-		if errors.Is(err, models.NotFoundErr) {
-			response.NotFound(w)
-			return
-		}
-		log.Error().Err(err).Msg("failed to get user")
-		response.InternalError(w)
-		return
-	}
-
-	if err := response.JSON(w, usr); err != nil {
-		log.Error().Err(err).Msg("failed to encode response")
-	}
+	return &protobuf.User{Id: user.ID, Name: user.Name}, nil
 }

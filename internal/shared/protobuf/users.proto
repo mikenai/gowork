@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package protobuf;
+
+option go_package = "github.com/mikenai/gowork/protobuf";
+
+service Users {
+    rpc GetUser(GetRequest) returns (User) {}
+}
+
+message GetRequest {
+    string id = 1;
+}
+
+message User {
+    string id = 1;
+    string name = 2;
+}

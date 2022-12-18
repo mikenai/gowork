@@ -2,12 +2,12 @@ package usersapi
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/mikenai/gowork/internal/shared/protobuf"
+	"google.golang.org/grpc"
 )
 
 type User struct {
@@ -21,28 +21,22 @@ type Client struct {
 }
 
 func (cl *Client) GetUser(ctx context.Context, id string) (User, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		cl.BaseURL+fmt.Sprintf("/users/%s", id), nil)
+	var conn *grpc.ClientConn
+	conn, err := grpc.Dial(cl.BaseURL, grpc.WithInsecure())
 	if err != nil {
-		return User{}, fmt.Errorf("failed to create request: %w", err)
+		errors.New("connection issue")
 	}
+	defer conn.Close()
 
-	req.Header["X-Request-ID"] = []string{middleware.GetReqID(ctx)}
+	client := protobuf.NewUsersClient(conn)
 
-	res, err := cl.Http.Do(req)
+	req := protobuf.GetRequest{Id: id}
+	user, err := client.GetUser(ctx, &req)
 	if err != nil {
-		return User{}, fmt.Errorf("failed to perform request: %w", err)
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		return User{}, errors.New("non 200 code")
-	}
-
-	user := User{}
-	if err := json.NewDecoder(res.Body).Decode(&user); err != nil {
 		return User{}, fmt.Errorf("json error: %w", err)
 	}
 
-	return user, nil
+	return User{ID: user.Id, Name: user.Name}, nil
+
 }
+

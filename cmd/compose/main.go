@@ -59,7 +59,7 @@ func main() {
 	}
 
 	users := &usersapi.Client{
-		BaseURL: "http://localhost:8080",
+		BaseURL: "localhost:8080",
 		Http:    cl,
 	}
 

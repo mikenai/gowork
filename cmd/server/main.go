@@ -1,24 +1,17 @@
 package main
 
 import (
-	"context"
 	"database/sql"
-	"fmt"
-	"net/http"
-	"os/signal"
-	"syscall"
+	"net"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mikenai/gowork/cmd/server/config"
 	"github.com/mikenai/gowork/internal/handlers"
+	"github.com/mikenai/gowork/internal/shared/protobuf"
 	userstorage "github.com/mikenai/gowork/internal/storage/users"
 	"github.com/mikenai/gowork/internal/users"
-	"github.com/mikenai/gowork/pkg/dbcollector"
 	"github.com/mikenai/gowork/pkg/logger"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -56,42 +49,16 @@ func main() {
 	us := users.New(ur)
 	uh := handlers.NewUsers(us)
 
-	r := chi.NewRouter()
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-	r.Use(logger.LoggerMiddleware(log))
+	port := cfg.HTTP.Addr
 
-	prometheus.MustRegister(dbcollector.NewSQLDatabaseCollector("general", "main", "sqlite", db))
-	r.Mount("/metrics", promhttp.Handler())
-
-	r.Mount("/users", uh.Routes())
-
-	s := http.Server{
-		Addr:    cfg.HTTP.Addr,
-		Handler: r,
-
-		ReadTimeout:  cfg.HTTP.ReadTimeout,
-		WriteTimeout: cfg.HTTP.WriteTimeout,
-
-		IdleTimeout: cfg.HTTP.IdleTimeout,
+	lis, err := net.Listen("tcp", port)
+	if err != nil {
+		log.Fatal().Msg("failed to listen")
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	defer stop()
-
-	go func() {
-		fmt.Println(s.ListenAndServe())
-		stop()
-	}()
-
-	<-ctx.Done()
-	log.Info().Msg("signal received")
-
-	ctx, cancel := context.WithTimeout(context.Background(), cfg.GracefullTimeout)
-	defer cancel()
-
-	log.Info().Msg("shutting down")
-	s.Shutdown(ctx)
+	gsrv := grpc.NewServer()
+	protobuf.RegisterUsersServer(gsrv, &uh)
+	if err := gsrv.Serve(lis); err != nil {
+		log.Fatal().Msg("failed to serve")
+	}
 }
