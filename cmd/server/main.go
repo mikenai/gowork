@@ -78,12 +78,13 @@ func main() {
 		IdleTimeout: cfg.HTTP.IdleTimeout,
 	}
 
-	go func() {
-		fmt.Println(s.ListenAndServe())
-	}()
-
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer stop()
+
+	go func() {
+		fmt.Println(s.ListenAndServe())
+		stop()
+	}()
 
 	<-ctx.Done()
 	log.Info().Msg("signal received")
@@ -92,5 +93,7 @@ func main() {
 	defer cancel()
 
 	log.Info().Msg("shutting down")
-	s.Shutdown(ctx)
+	if err := s.Shutdown(ctx); err != nil {
+		log.Error().Err(err).Msg("failed to shutdown http server")
+	}
 }
