@@ -13,8 +13,10 @@ import (
 	"github.com/mikenai/gowork/cmd/compose/config"
 	"github.com/mikenai/gowork/cmd/compose/handlers"
 	"github.com/mikenai/gowork/cmd/compose/pkg/stub"
-	"github.com/mikenai/gowork/cmd/compose/pkg/usersapi"
+	pb "github.com/mikenai/gowork/internal/proto_buffers"
 	"github.com/mikenai/gowork/pkg/logger"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -58,15 +60,15 @@ func main() {
 		Http:    cl,
 	}
 
-	users := &usersapi.Client{
-		BaseURL: "http://localhost:8080",
-		Http:    cl,
-	}
+	conn, err := grpc.Dial("localhost:5050", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	defer conn.Close()
+
+	users := pb.NewUsersServiceClient(conn)
 
 	h := handlers.Handler{
 		PostsAPI:    stub,
 		ProfilesAPI: stub,
-		UsersAPI:    users,
+		UsersGRPC:   users,
 
 		Log: log,
 	}

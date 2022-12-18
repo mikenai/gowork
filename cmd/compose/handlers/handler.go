@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/mikenai/gowork/cmd/compose/pkg/stub"
 	"github.com/mikenai/gowork/cmd/compose/pkg/usersapi"
+	pb "github.com/mikenai/gowork/internal/proto_buffers"
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
 )
@@ -27,7 +28,7 @@ type Users interface {
 type Handler struct {
 	PostsAPI    Posts
 	ProfilesAPI Profiles
-	UsersAPI    Users
+	UsersGRPC   pb.UsersServiceClient
 
 	Log zerolog.Logger
 }
@@ -65,11 +66,11 @@ func (h Handler) UserPage(w http.ResponseWriter, r *http.Request) {
 	})
 
 	eg.Go(func() error {
-		user, err := h.UsersAPI.GetUser(batchCtx, id)
+		user, err := h.UsersGRPC.GetOne(batchCtx, &pb.GetUserRequest{Id: id})
 		if err != nil {
 			return err
 		}
-		res.User = user
+		res.User = usersapi.User{ID: user.Id, Name: user.Name}
 		return nil
 	})
 
