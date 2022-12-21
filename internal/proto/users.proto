@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option go_package = "github.com/mikenai/gowork/internal/proto";
+
+package proto;
+
+service UsersService {
+    rpc GetUser(GetUserRequest) returns (UserResponse) {}
+}
+
+message UserResponse {
+    string id = 1;
+    string name = 2;
+}
+
+message GetUserRequest {
+    string id = 1;
+}

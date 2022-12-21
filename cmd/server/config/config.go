@@ -21,6 +21,8 @@ type Config struct {
 	Log  logger.Config
 	HTTP HTTP
 	DB   SQLite
+
+	GRCPPort string `conf:"default::5050"`
 }
 
 type SQLite struct {
