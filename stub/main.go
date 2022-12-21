@@ -8,7 +8,7 @@ import (
 	"github.com/ardanlabs/conf/v3"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	stub "github.com/mikenai/gowork/cmd/stub/handlers"
+	"github.com/mikenai/gowork/stub/handlers"
 	"github.com/rs/zerolog"
 )
 
@@ -37,8 +37,8 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	r.Get("/profiles/{user_id}", stub.ProfileHandler)
-	r.Get("/{user_id}/posts", stub.PostsHandler)
+	r.Get("/profiles/{user_id}", handlers.ProfileHandler)
+	r.Get("/{user_id}/posts", handlers.PostsHandler)
 
 	log.Info().Str("http_addr", cfg.HTTPAddr).Msg("server starting")
 	http.ListenAndServe(cfg.HTTPAddr, r)
