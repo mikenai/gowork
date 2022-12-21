@@ -10,11 +10,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/mikenai/gowork/cmd/compose/config"
-	"github.com/mikenai/gowork/cmd/compose/handlers"
-	"github.com/mikenai/gowork/cmd/compose/pkg/stub"
-	"github.com/mikenai/gowork/cmd/compose/pkg/usersapi"
-	"github.com/mikenai/gowork/pkg/logger"
+	"github.com/mikenai/gowork/common/logger"
+	"github.com/mikenai/gowork/compose/config"
+	"github.com/mikenai/gowork/compose/handlers"
+	"github.com/mikenai/gowork/compose/pkg/stub"
+	"github.com/mikenai/gowork/compose/pkg/usersapi"
 )
 
 func main() {

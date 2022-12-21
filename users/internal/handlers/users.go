@@ -7,9 +7,9 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/mikenai/gowork/common/logger"
+	"github.com/mikenai/gowork/common/response"
 	"github.com/mikenai/gowork/internal/models"
-	"github.com/mikenai/gowork/pkg/logger"
-	"github.com/mikenai/gowork/pkg/response"
 )
 
 type CreateUserParams struct {
