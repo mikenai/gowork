@@ -7,8 +7,8 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mikenai/gowork/cmd/server/config"
+	integratiotesting "github.com/mikenai/gowork/common/integration_testing"
 	"github.com/mikenai/gowork/internal/models"
-	integratiotesting "github.com/mikenai/gowork/pkg/integration_testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

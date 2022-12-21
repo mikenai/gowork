@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ardanlabs/conf/v3"
-	"github.com/mikenai/gowork/pkg/logger"
+	"github.com/mikenai/gowork/common/logger"
 )
 
 type Help string

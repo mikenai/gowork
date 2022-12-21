@@ -12,11 +12,11 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mikenai/gowork/cmd/server/config"
+	"github.com/mikenai/gowork/common/dbcollector"
+	"github.com/mikenai/gowork/common/logger"
 	"github.com/mikenai/gowork/internal/handlers"
 	userstorage "github.com/mikenai/gowork/internal/storage/users"
 	"github.com/mikenai/gowork/internal/users"
-	"github.com/mikenai/gowork/pkg/dbcollector"
-	"github.com/mikenai/gowork/pkg/logger"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )

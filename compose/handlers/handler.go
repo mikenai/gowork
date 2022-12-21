@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/mikenai/gowork/cmd/compose/pkg/stub"
-	"github.com/mikenai/gowork/cmd/compose/pkg/usersapi"
+	"github.com/mikenai/gowork/compose/pkg/stub"
+	"github.com/mikenai/gowork/compose/pkg/usersapi"
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
 )
@@ -26,6 +26,7 @@ type Users interface {
 
 type Handler struct {
 	PostsAPI    Posts
+	PostsAPI2   Posts
 	ProfilesAPI Profiles
 	UsersAPI    Users
 
