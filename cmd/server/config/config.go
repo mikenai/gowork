@@ -21,6 +21,7 @@ type Config struct {
 	Log  logger.Config
 	HTTP HTTP
 	DB   SQLite
+	GRPC GRPC
 }
 
 type SQLite struct {
@@ -37,6 +38,10 @@ type HTTP struct {
 	ReadTimeout  time.Duration `conf:"default:1s"`
 	WriteTimeout time.Duration `conf:"default:1s"`
 	IdleTimeout  time.Duration `conf:"default:5s"`
+}
+
+type GRPC struct {
+	Port string `conf:"default::8080"`
 }
 
 func New() (Config, Help, error) {

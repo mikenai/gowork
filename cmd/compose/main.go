@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"net/http"
@@ -14,7 +15,9 @@ import (
 	"github.com/mikenai/gowork/cmd/compose/handlers"
 	"github.com/mikenai/gowork/cmd/compose/pkg/stub"
 	"github.com/mikenai/gowork/cmd/compose/pkg/usersapi"
+	"github.com/mikenai/gowork/internal/shared/protobuf"
 	"github.com/mikenai/gowork/pkg/logger"
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -58,9 +61,16 @@ func main() {
 		Http:    cl,
 	}
 
+	conn, err := grpc.Dial(cfg.GRPC.Host+cfg.GRPC.Port, grpc.WithInsecure())
+	if err != nil {
+		errors.New("connection issue")
+	}
+	defer conn.Close()
+
+	gcl := protobuf.NewUsersClient(conn)
+
 	users := &usersapi.Client{
-		BaseURL: "localhost:8080",
-		Http:    cl,
+		Grpc: gcl,
 	}
 
 	h := handlers.Handler{

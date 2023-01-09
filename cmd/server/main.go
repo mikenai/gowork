@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"net"
+	"os/signal"
+	"syscall"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mikenai/gowork/cmd/server/config"
@@ -49,16 +52,31 @@ func main() {
 	us := users.New(ur)
 	uh := handlers.NewUsers(us)
 
-	port := cfg.HTTP.Addr
+	port := cfg.GRPC.Port
 
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatal().Msg("failed to listen")
 	}
 
-	gsrv := grpc.NewServer()
-	protobuf.RegisterUsersServer(gsrv, &uh)
-	if err := gsrv.Serve(lis); err != nil {
-		log.Fatal().Msg("failed to serve")
-	}
+	s := grpc.NewServer()
+	protobuf.RegisterUsersServer(s, &uh)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	defer stop()
+
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			log.Fatal().Msg("failed to serve")
+		}
+		stop()
+	}()
+
+	<-ctx.Done()
+	log.Info().Msg("signal received")
+
+	_, cancel := context.WithTimeout(context.Background(), cfg.GracefullTimeout)
+	defer cancel()
+
+	log.Info().Msg("shutting down")
+	s.Stop()
 }
