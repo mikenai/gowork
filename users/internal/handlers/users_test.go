@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -68,24 +69,39 @@ func TestUsers_Delete(t *testing.T) {
 		fields   fields
 		args     args
 		wantCode int
-		wantErr  string
+		wantBody string
 	}{
 		{
-			name: "deleted",
+			name: "error",
 			fields: fields{
 				user: &UsersServiceMock{
-					DeleteOneFunc: func(ctx context.Context, id string) (err error) {
-						assert.Equal(t, nil, err)
-						return err
+					DeleteOneFunc: func(ctx context.Context, id string) error {
+						return errors.New("error")
 					},
 				},
 			},
 			args: args{
 				w: httptest.NewRecorder(),
-				r: httptest.NewRequest(http.MethodDelete, "/", strings.NewReader(`{"id": "1"}`)),
+				r: httptest.NewRequest(http.MethodDelete, "/1", nil),
 			},
-			wantCode: http.StatusMethodNotAllowed,
-			wantErr:  "bytes.Buffer: UnreadByte: previous operation was not a successful read",
+			wantCode: http.StatusNotFound,
+			wantBody: "Not Found\n",
+		},
+		{
+			name: "success",
+			fields: fields{
+				user: &UsersServiceMock{
+					DeleteOneFunc: func(ctx context.Context, id string) error {
+						return nil
+					},
+				},
+			},
+			args: args{
+				w: httptest.NewRecorder(),
+				r: httptest.NewRequest(http.MethodDelete, "/1", nil),
+			},
+			wantCode: http.StatusOK,
+			wantBody: "\"1\"\n",
 		},
 	}
 	for _, tt := range tests {
@@ -94,7 +110,7 @@ func TestUsers_Delete(t *testing.T) {
 			u.Routes().ServeHTTP(tt.args.w, tt.args.r)
 
 			assert.Equal(t, tt.wantCode, tt.args.w.Code)
-			assert.Equal(t, tt.wantErr, tt.args.w.Body.UnreadByte().Error())
+			assert.Equal(t, string(tt.wantBody), tt.args.w.Body.String())
 		})
 	}
 }

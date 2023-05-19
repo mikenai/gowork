@@ -95,12 +95,12 @@ func (u Users) DeleteOne(w http.ResponseWriter, r *http.Request) {
 
 	err := u.user.DeleteOne(ctx, id)
 	if err != nil {
-		if errors.Is(err, models.DeletingErr) {
+		if errors.Is(err, models.NotFoundErr) {
 			response.InternalError(w)
 			return
 		}
-		log.Error().Err(err).Msg("failed to delete user")
-		response.InternalError(w)
+		log.Error().Err(err).Msg("failed to delete user, user not found")
+		response.NotFound(w)
 		return
 	}
 	if err := response.JSON(w, id); err != nil {
