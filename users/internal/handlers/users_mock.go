@@ -38,6 +38,9 @@ type UsersServiceMock struct {
 	// GetOneFunc mocks the GetOne method.
 	GetOneFunc func(ctx context.Context, id string) (models.User, error)
 
+	// DeleteOneFunc mocks the DeleteOne method.
+	DeleteOneFunc func(ctx context.Context, id string) error
+
 	// calls tracks calls to the methods.
 	calls struct {
 		// Create holds details about calls to the Create method.
@@ -54,9 +57,17 @@ type UsersServiceMock struct {
 			// ID is the id argument value.
 			ID string
 		}
+		// DeleteOne holds details about calls to the DeleteOne method.
+		DeleteOne []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID string
+		}
 	}
 	lockCreate sync.RWMutex
 	lockGetOne sync.RWMutex
+	lockDeleteOne sync.RWMutex
 }
 
 // Create calls CreateFunc.
@@ -128,5 +139,41 @@ func (mock *UsersServiceMock) GetOneCalls() []struct {
 	mock.lockGetOne.RLock()
 	calls = mock.calls.GetOne
 	mock.lockGetOne.RUnlock()
+	return calls
+}
+
+// DeleteOne calls DeleteOneFunc.
+func (mock *UsersServiceMock) DeleteOne(ctx context.Context, id string) error {
+	if mock.GetOneFunc == nil {
+		panic("UsersServiceMock.DeleteOneFunc: method is nil but UsersService.DeleteOne was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  string
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockDeleteOne.Lock()
+	mock.calls.DeleteOne = append(mock.calls.DeleteOne, callInfo)
+	mock.lockDeleteOne.Unlock()
+	return mock.DeleteOneFunc(ctx, id)
+}
+
+// DeleteOneCalls gets all the calls that were made to DeleteOne.
+// Check the length with:
+//
+//	len(mockedUsersService.DeleteOneCalls())
+func (mock *UsersServiceMock) DeleteOneCalls() []struct {
+	Ctx context.Context
+	ID  string
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  string
+	}
+	mock.lockDeleteOne.RLock()
+	calls = mock.calls.DeleteOne
+	mock.lockDeleteOne.RUnlock()
 	return calls
 }

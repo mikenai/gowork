@@ -21,6 +21,7 @@ type CreateUserParams struct {
 type UsersService interface {
 	Create(ctx context.Context, name string) (models.User, error)
 	GetOne(ctx context.Context, id string) (models.User, error)
+	DeleteOne(ctx context.Context, id string) error
 }
 
 type Users struct {
@@ -36,6 +37,7 @@ func (u Users) Routes() http.Handler {
 
 	r.Post("/", u.Create)
 	r.Get("/{id}", u.GetOne)
+	r.Delete("/{id}", u.DeleteOne)
 
 	return r
 }
@@ -83,6 +85,26 @@ func (u Users) GetOne(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := response.JSON(w, usr); err != nil {
+		log.Error().Err(err).Msg("failed to encode response")
+	}
+}
+
+func (u Users) DeleteOne(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	log := logger.FromContext(ctx)
+	id := chi.URLParam(r, "id")
+
+	err := u.user.DeleteOne(ctx, id)
+	if err != nil {
+		if errors.Is(err, models.DeletingErr) {
+			response.InternalError(w)
+			return
+		}
+		log.Error().Err(err).Msg("failed to delete user")
+		response.InternalError(w)
+		return
+	}
+	if err := response.JSON(w, id); err != nil {
 		log.Error().Err(err).Msg("failed to encode response")
 	}
 }
