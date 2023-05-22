@@ -72,7 +72,7 @@ func TestUsers_Delete(t *testing.T) {
 		wantBody string
 	}{
 		{
-			name: "error",
+			name: "error 500",
 			fields: fields{
 				user: &UsersServiceMock{
 					DeleteOneFunc: func(ctx context.Context, id string) error {
@@ -84,8 +84,8 @@ func TestUsers_Delete(t *testing.T) {
 				w: httptest.NewRecorder(),
 				r: httptest.NewRequest(http.MethodDelete, "/1", nil),
 			},
-			wantCode: http.StatusNotFound,
-			wantBody: "Not Found\n",
+			wantCode: http.StatusInternalServerError,
+			wantBody: "Internal Server Error\n",
 		},
 		{
 			name: "success",

@@ -48,10 +48,6 @@ func (s Service) GetOne(ctx context.Context, id string) (models.User, error) {
 }
 
 func (s Service) DeleteOne(ctx context.Context, id string) error {
-	if id == "" {
-		return fmt.Errorf("id is empty: %w", models.InvalidErr)
-	}
-
 	err := s.repo.DeleteByID(ctx, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete user: %w", err)
