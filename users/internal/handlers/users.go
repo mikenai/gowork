@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -92,6 +93,12 @@ func (u Users) DeleteOne(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromContext(ctx)
 	id := chi.URLParam(r, "id")
+	if id == "" {
+		err := fmt.Errorf("empty user id: %s", id)
+		log.Error().Err(err).Msg("no user id")
+		response.NotFound(w)
+		return
+	}
 	err := u.user.DeleteOne(ctx, id)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to delete user")

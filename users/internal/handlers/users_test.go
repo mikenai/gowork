@@ -88,6 +88,23 @@ func TestUsers_Delete(t *testing.T) {
 			wantBody: "Internal Server Error\n",
 		},
 		{
+			name: "error 404",
+			fields: fields{
+				user: &UsersServiceMock{
+					DeleteOneFunc: func(ctx context.Context, id string) error {
+						assert.Empty(t, "", id)
+						return errors.New("error")
+					},
+				},
+			},
+			args: args{
+				w: httptest.NewRecorder(),
+				r: httptest.NewRequest(http.MethodDelete, "/1", nil),
+			},
+			wantCode: http.StatusNotFound,
+			wantBody: "Not Found\n",
+		},
+		{
 			name: "success",
 			fields: fields{
 				user: &UsersServiceMock{
