@@ -47,6 +47,57 @@ func TestIntegrationStorage_Create(t *testing.T) {
 	})
 }
 
+func TestIntegrationStorage_GetByID(t *testing.T) {
+	integratiotesting.ShouldSkip(t)
+
+	db, dbClose := DbHelper(t)
+	defer dbClose()
+
+	SetUp(t, db, nil)
+	t.Cleanup(func() {
+		// clean after test
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	t.Run("succes", func(t *testing.T) {
+		s := Storage{db: db}
+
+		usr, err := s.GetByID(ctx, "1")
+		require.NoError(t, err)
+
+		dbUser := models.User{}
+		row := db.QueryRowContext(ctx, "SELECT id, name FROM users WHERE id=?", usr.ID)
+		err = row.Scan(&dbUser.ID, &dbUser.Name)
+		require.NoError(t, err)
+
+		assert.Equal(t, usr, dbUser)
+	})
+}
+
+func TestIntegrationStorage_DeleteByID(t *testing.T) {
+	integratiotesting.ShouldSkip(t)
+
+	db, dbClose := DbHelper(t)
+	defer dbClose()
+
+	SetUp(t, db, nil)
+	t.Cleanup(func() {
+		// clean after test
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	t.Run("succes", func(t *testing.T) {
+		s := Storage{db: db}
+
+		err := s.DeleteByID(ctx, "1")
+		assert.Equal(t, err, nil)
+	})
+}
+
 func SetUp(t *testing.T, db *sql.DB, data any) {
 	t.Helper()
 
