@@ -16,7 +16,7 @@ type CreateUserParams struct {
 	Name string
 }
 
-//go:generate moq -rm -out users_mock.go . UsersService.
+//go:generate moq -rm -out users_mock.go . UsersService
 //go:generate lol 12ed qwe qwe qw eqw e
 type UsersService interface {
 	Create(ctx context.Context, name string) (models.User, error)
