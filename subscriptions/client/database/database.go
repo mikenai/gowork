@@ -23,13 +23,16 @@ const (
 	DatabaseDb       = "subscriptions"
 )
 
-// Init sets up a new database client.
-func (c *Client) Init(ctx context.Context, config *config.Config) error {
-	connString := fmt.Sprintf("host=%s port=%d user=%s "+
+func ConnString() string {
+	return fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
 		DatabaseUrl, DatabasePort, DatabaseUser, DatabasePassword, DatabaseDb)
 
-	db, err := sql.Open("postgres", connString)
+}
+
+// Init sets up a new database client.
+func (c *Client) Init(ctx context.Context, config *config.Config) error {
+	db, err := sql.Open("postgres", ConnString())
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
