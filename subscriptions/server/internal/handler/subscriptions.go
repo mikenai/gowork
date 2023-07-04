@@ -22,7 +22,16 @@ func Subscriptions(m models.Fetcher) http.HandlerFunc {
 			return
 		}
 
-		response, _ := json.Marshal(subscriptions)
+		response, err := json.Marshal(subscriptions)
+		if err != nil {
+			handleError(
+				w,
+				fmt.Errorf("error marshaling response: %w", err),
+				http.StatusInternalServerError,
+				true,
+			)
+			return
+		}
 
 		w.WriteHeader(http.StatusOK)
 		w.Write(response)

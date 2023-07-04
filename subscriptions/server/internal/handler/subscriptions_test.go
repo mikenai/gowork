@@ -100,3 +100,60 @@ func TestGetUserSubscriptions(t *testing.T) {
 		})
 	}
 }
+
+func TestGetSubscriptions(t *testing.T) {
+	type args struct {
+		fetcher models.Fetcher
+	}
+	test := []struct {
+		name           string
+		args           args
+		expectedStatus int
+		expectedBody   []byte
+	}{
+		{
+			name: "success",
+			args: args{
+				fetcher: mockFetcher{
+					getSubscriptions: func() (subscriptions []models.UserSubscription, err error) {
+						return subscriptions, nil
+					},
+				},
+			},
+			expectedStatus: 200,
+			expectedBody:   []byte(`[{"userId":"1","subscriptionId":"1234","chargeAmount":124,"status":"1"},{"userId":"2","subscriptionId":"5678","chargeAmount":45,"status":"1"}]`),
+		},
+		{
+			name: "error getting subscriptions",
+			args: args{
+				fetcher: mockFetcher{
+					getSubscriptions: func() (subscriptions []models.UserSubscription, err error) {
+						return nil, errors.New("error")
+					},
+				},
+			},
+			expectedStatus: 500,
+			expectedBody:   nil,
+		},
+	}
+
+	for _, tc := range test {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/"), nil)
+			res := httptest.NewRecorder()
+
+			router := chi.NewRouter()
+			router.HandleFunc("/", Subscriptions(tc.args.fetcher))
+
+			router.ServeHTTP(res, req)
+			var s models.UserSubscription
+			var o models.UserSubscription
+			_ = json.Unmarshal(res.Body.Bytes(), &s)
+
+			_ = json.Unmarshal(tc.expectedBody, &o)
+
+			assert.Equal(t, tc.expectedStatus, res.Code)
+			assert.Equal(t, s, o, "unxpected body")
+		})
+	}
+}
