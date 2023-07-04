@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"main/models"
 	"net/http"
@@ -10,80 +10,93 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/stretchr/testify/assert"
 )
 
-type mockSubscriber struct {
-	subscribe func(payload models.UserSubscription) (string, error)
+type mockFetcher struct {
+	getUserSubscriptions func(userID string) ([]models.UserSubscription, error)
+	getSubscriptions     func() ([]models.UserSubscription, error)
 }
 
-func (m mockSubscriber) Subscribe(payload models.UserSubscription) (string, error) {
-	return m.subscribe(payload)
+func (m mockFetcher) GetUserSubscriptions(userID string) ([]models.UserSubscription, error) {
+	return m.getUserSubscriptions(userID)
 }
 
-func TestSubscribe(t *testing.T) {
+func (m mockFetcher) GetSubscriptions() ([]models.UserSubscription, error) {
+	return m.getSubscriptions()
+}
+
+func TestGetUserSubscriptions(t *testing.T) {
 	type args struct {
-		subscriber models.Subscriber
-		payload    models.UserSubscription
+		fetcher models.Fetcher
+		userID  string
 	}
-	tests := []struct {
+	test := []struct {
 		name           string
 		args           args
 		expectedStatus int
+		expectedBody   []byte
 	}{
 		{
 			name: "success",
 			args: args{
-				subscriber: mockSubscriber{
-					subscribe: func(payload models.UserSubscription) (string, error) {
-						return "1", nil
+				fetcher: mockFetcher{
+					getUserSubscriptions: func(userID string) (subscriptions []models.UserSubscription, err error) {
+						assert.Equal(t, "1", userID)
+						return subscriptions, nil
 					},
 				},
-				payload: models.UserSubscription{
-					UserID:         "1",
-					SubscriptionID: "2",
-					ChargeAmount:   3,
-					Status:         "active",
-				},
+				userID: "1",
 			},
 			expectedStatus: 200,
+			expectedBody:   []byte(`[{"userId":"1","subscriptionId":"5678","chargeAmount":45,"status":"1"}]`),
 		},
 		{
-			name: "bad request, no user id",
+			name: "no user id",
 			args: args{
-				subscriber: mockSubscriber{
-					subscribe: func(payload models.UserSubscription) (string, error) {
-						return "1", nil
+				fetcher: mockFetcher{
+					getUserSubscriptions: func(userID string) (subscriptions []models.UserSubscription, err error) {
+						assert.Equal(t, "1", userID)
+						return subscriptions, nil
 					},
 				},
-				payload: models.UserSubscription{
-					UserID:         "",
-					SubscriptionID: "2",
-					ChargeAmount:   3,
-					Status:         "active",
-				},
+				userID: "",
 			},
 			expectedStatus: 400,
+			expectedBody:   nil,
+		},
+		{
+			name: "error getting user subscriptions",
+			args: args{
+				fetcher: mockFetcher{
+					getUserSubscriptions: func(userID string) (subscriptions []models.UserSubscription, err error) {
+						return nil, errors.New("error")
+					},
+				},
+				userID: "2",
+			},
+			expectedStatus: 500,
+			expectedBody:   nil,
 		},
 	}
 
-	for _, tc := range tests {
+	for _, tc := range test {
 		t.Run(tc.name, func(t *testing.T) {
-			payload, err := json.Marshal(&tc.args.payload)
-			if err != nil {
-				t.Errorf("Error marshaling payload in test")
-			}
-
-			req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/subscribe"), bytes.NewBuffer(payload))
+			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/get?id=%s", tc.args.userID), nil)
 			res := httptest.NewRecorder()
 
 			router := chi.NewRouter()
-			router.HandleFunc("/subscribe", Subscribe(tc.args.subscriber))
+			router.HandleFunc("/{id}", UserSubscriptions(tc.args.fetcher))
 
 			router.ServeHTTP(res, req)
+			var s models.UserSubscription
+			var o models.UserSubscription
+			_ = json.Unmarshal(res.Body.Bytes(), &s)
 
-			if got := res.Code; got != tc.expectedStatus {
-				t.Errorf("Unexpected response code: got %d, exp %d", got, tc.expectedStatus)
-			}
+			_ = json.Unmarshal(tc.expectedBody, &o)
+
+			assert.Equal(t, tc.expectedStatus, res.Code)
+			assert.Equal(t, s, o, "unxpected body")
 		})
 	}
 }

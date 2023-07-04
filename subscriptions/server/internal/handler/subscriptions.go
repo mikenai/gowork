@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// Handler to get all subscriptions
 func Subscriptions(m models.Fetcher) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -28,52 +29,31 @@ func Subscriptions(m models.Fetcher) http.HandlerFunc {
 	}
 }
 
-// Payload:
-//	type UserSubscription struct {
-//		UserID         string `json:"userId"`
-//		SubscriptionID string `json:"subscriptionId"`
-//		ChargeAmount   int    `json:"chargeAmount"`
-//		Status         string `json:"status"`
-//	}
-
-func Subscribe(m models.Subscriber) http.HandlerFunc {
+// Handler to get a user subscriptions
+func UserSubscriptions(m models.Fetcher) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		var payload models.UserSubscription
-		err := json.NewDecoder(r.Body).Decode(&payload)
-		if err != nil {
+		// Get user ID
+		userID := r.URL.Query().Get("id")
+		if userID == "" {
 			handleError(
 				w,
-				fmt.Errorf("decode subscribe payload: %s, %w", r.RequestURI, err),
+				fmt.Errorf("missing user ID"),
 				http.StatusBadRequest,
-				true,
-			)
+				true)
 			return
 		}
-
-		err = models.Validate(payload)
+		subscriptions, err := m.GetUserSubscriptions(userID)
 		if err != nil {
 			handleError(
 				w,
-				fmt.Errorf("error validating subscribe payload: %w", err),
-				http.StatusBadRequest,
-				true,
-			)
-			return
-		}
-
-		responseID, err := m.Subscribe(payload)
-		if err != nil {
-			handleError(
-				w,
-				fmt.Errorf("error subscribing user with user id: %s: %w", payload.UserID, err),
+				fmt.Errorf("error getting user subscriptions: %w", err),
 				http.StatusInternalServerError,
 				true,
 			)
 			return
 		}
-		msg := fmt.Sprintf("User with ID: %s is signed up for subscription with ID: %s ", payload.UserID, responseID)
-		response, _ := json.Marshal(msg)
+
+		response, _ := json.Marshal(subscriptions)
 
 		w.WriteHeader(http.StatusOK)
 		w.Write(response)
