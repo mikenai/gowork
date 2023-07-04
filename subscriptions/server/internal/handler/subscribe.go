@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// Handler to subscribe user to a subscription
 // Payload:
 //	type UserSubscription struct {
 //		UserID         string `json:"userId"`
