@@ -5,8 +5,12 @@ import (
 	"fmt"
 )
 
-var InvalidErr = errors.New("invalid argument")
+var InvalidArgumentErr = errors.New("invalid argument")
 
-var UserCreateParamInvalidNameErr = fmt.Errorf("invalid name: %w", InvalidErr)
+var UserCreateParamInvalidNameErr = fmt.Errorf("invalid name: %w", InvalidArgumentErr)
+
+var UserUpdateParamInvalidNameEmptyErr = fmt.Errorf("invalid name: %w", InvalidArgumentErr)
+
+var UserUpdateParamInvalidNameLenErr = fmt.Errorf("invalid name: %w", InvalidArgumentErr)
 
 var NotFoundErr = errors.New("not found")

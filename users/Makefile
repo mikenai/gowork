@@ -1,4 +1,4 @@
-gexport GOBIN := $(shell pwd)/bin
+export GOBIN := $(shell pwd)/bin
 export PATH := $(GOBIN):$(PATH)
 
 build: 
