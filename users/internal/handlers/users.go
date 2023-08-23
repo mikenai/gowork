@@ -55,6 +55,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, models.UserCreateParamInvalidNameErr) {
 			response.BadRequest(w)
+			return
 		}
 		log.Error().Err(err).Msg("failed to create user")
 		response.InternalError(w)
